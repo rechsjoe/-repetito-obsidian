@@ -424,7 +424,7 @@ module.exports = class RepetitoPlugin extends Plugin {
     this.registerView(VIEW, leaf => new RepetitoView(leaf, this));
     this.addRibbonIcon('graduation-cap', 'Repetito öffnen', () => this.activateView());
     this.addCommand({ id: 'open', name: 'Repetito öffnen', callback: () => this.activateView() });
-    this.addCommand({ id: 'start-round', name: 'Repetitionsrunde starten', callback: async () => { await this.activateView(); const leaf = this.app.workspace.getLeavesOfType(VIEW)[0]; leaf?.view.startRound(); } });
+    this.addCommand({ id: 'start-round', name: 'Repetitionsrunde starten', callback: async () => { await this.activateView(); this.mainLeaf?.view.startRound(); } });
   }
   onunload() { void this.flushRunningTimer(); }
   async persist() {
@@ -437,8 +437,10 @@ module.exports = class RepetitoPlugin extends Plugin {
   }
   exercise(id) { return this.data.exercises.find(x => x.id === id); }
   async activateView() {
-    let leaf = this.app.workspace.getLeavesOfType(VIEW)[0];
-    if (!leaf) leaf = this.app.workspace.getRightLeaf(false);
-    await leaf.setViewState({ type: VIEW, active: true }); this.app.workspace.revealLeaf(leaf);
+    if (!this.mainLeaf || !this.mainLeaf.view || this.mainLeaf.view.getViewType?.() !== VIEW) {
+      this.mainLeaf = this.app.workspace.getLeaf('tab');
+    }
+    await this.mainLeaf.setViewState({ type: VIEW, active: true });
+    this.app.workspace.revealLeaf(this.mainLeaf);
   }
 };
