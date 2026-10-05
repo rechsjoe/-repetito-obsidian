@@ -1,0 +1,8 @@
+{
+  "id": "repetito",
+  "name": "Repetito",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Organize exercises, repeat them, and track your learning progress.",
+  "isDesktopOnly": false
+}
