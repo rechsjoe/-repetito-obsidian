@@ -142,7 +142,8 @@ class RepetitoView extends ItemView {
   drawExerciseRow(exercise, host, depth) {
     const row = host.createDiv({ cls: 'repetito-row repetito-exercise-row' }); row.style.setProperty('--depth', depth);
     const attempt = lastAttempt(exercise);
-    this.button(row, exercise.favorite ? 'Favorit entfernen' : 'Als Favorit markieren', exercise.favorite ? 'star' : 'star', async () => { exercise.favorite = !exercise.favorite; await this.plugin.persist(); await this.render(); });
+    const favorite = this.button(row, exercise.favorite ? 'Favorit entfernen' : 'Als Favorit markieren', 'star', async () => { exercise.favorite = !exercise.favorite; await this.plugin.persist(); await this.render(); });
+    if (exercise.favorite) favorite.addClass('repetito-favorite-active');
     const name = row.createEl('button', { text: exercise.name, cls: 'repetito-link' }); name.addEventListener('click', () => this.showExercise(exercise.id));
     row.createSpan({ text: attempt ? `${attempt.rating} · ${formatTime(attempt.seconds)}` : 'Noch nicht repetiert', cls: 'repetito-meta' });
     this.button(row, 'Übung bearbeiten', 'pencil', () => this.editExercise(exercise));
@@ -166,18 +167,29 @@ class RepetitoView extends ItemView {
     timerPanel.createEl('h3', { text: 'Repetition' });
     const clock = timerPanel.createEl('div', { text: '0:00', cls: 'repetito-clock' });
     const timerButtons = timerPanel.createDiv({ cls: 'repetito-actions' });
-    const start = this.button(timerButtons, this.plugin.data.session && this.plugin.data.session.exerciseId !== ex.id ? 'Andere Repetition läuft' : 'Starten', 'play', async () => { await this.beginAttempt(ex.id); start.setText('Läuft'); start.disabled = true; pause.disabled = false; finish.disabled = false; this.updateClock(clock); this.timer = window.setInterval(() => this.updateClock(clock), 500); });
     const sameSession = this.plugin.data.session?.exerciseId === ex.id;
+    const activeSession = this.plugin.data.session;
+    const start = this.button(timerButtons, sameSession ? (activeSession.paused ? 'Fortsetzen' : 'Pausieren') : 'Starten', sameSession && !activeSession.paused ? 'pause' : 'play', async () => {
+      if (this.plugin.data.session?.exerciseId === ex.id) {
+        await this.togglePause();
+      } else {
+        await this.beginAttempt(ex.id);
+      }
+      const session = this.plugin.data.session;
+      const running = !!session && !session.paused;
+      const label = running ? 'Pausieren' : 'Fortsetzen';
+      start.title = label; start.setAttribute('aria-label', label); setIcon(start, running ? 'pause' : 'play');
+      finish.disabled = !session || session.exerciseId !== ex.id;
+      this.updateClock(clock);
+      this.stopTicker();
+      if (running) this.timer = window.setInterval(() => this.updateClock(clock), 500);
+    });
     if (this.plugin.data.session && !sameSession) start.disabled = true;
-    const pause = this.button(timerButtons, 'Pausieren', 'pause', async () => { await this.togglePause(); pause.setText(this.plugin.data.session?.paused ? 'Fortsetzen' : 'Pausieren'); this.updateClock(clock); }); pause.disabled = !sameSession;
     const finish = this.button(timerButtons, 'Abschliessen', 'check', () => this.finishAttempt(ex.id)); finish.disabled = !sameSession;
     this.button(timerButtons, 'Abbrechen', 'x', () => this.cancelAttempt(ex.id));
-    if (this.plugin.data.session?.exerciseId === ex.id) {
-      const session = this.plugin.data.session;
-      start.setText(session.paused ? 'Fortsetzen' : 'Läuft'); start.disabled = !session.paused;
-      pause.setText(session.paused ? 'Fortsetzen' : 'Pausieren'); pause.disabled = false;
+    if (sameSession) {
       finish.disabled = false; this.updateClock(clock);
-      if (!session.paused) this.timer = window.setInterval(() => this.updateClock(clock), 500);
+      if (!activeSession.paused) this.timer = window.setInterval(() => this.updateClock(clock), 500);
     }
     const attempts = ex.attempts || [];
     const times = attempts.map(x => x.seconds);
