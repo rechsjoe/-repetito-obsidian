@@ -2,7 +2,7 @@
 
 Ein lokal arbeitendes Übungs- und Wiederholungswerkzeug für Obsidian Desktop und iPad.
 
-## Funktionen in Version 0.1.0
+## Funktionen in Version 0.1.3
 
 - Verschachtelte Ordner und Übungen
 - Mehrere Aufgaben-PDFs und Lösungs-PDFs je Übung
@@ -15,6 +15,7 @@ Ein lokal arbeitendes Übungs- und Wiederholungswerkzeug für Obsidian Desktop u
 - Geordnete Repetitionsrunde mit Ordnerwahl und Fortsetzen nach Obsidian-Neustart
 - Notizen und Verlauf mit korrigierbaren oder löschbaren Einträgen
 - Bestätigungsdialoge beim Löschen; PDF-Originale bleiben erhalten
+- Hauptbereich-Tab mit aufgeräumter Ordnerauswahl und angepasster iPad-Darstellung
 
 ## Test installation with BRAT
 

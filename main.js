@@ -302,7 +302,28 @@ class RepetitoView extends ItemView {
     const c = modal.contentEl; c.addClass('repetito-modal-content'); c.addClass('repetito-round-modal'); c.createEl('p', { text: 'Wähle Ordner aus. Unterordner werden einbezogen. Ohne Auswahl werden alle Übungen verwendet.' });
     const checks = [];
     const folderOptions = c.createDiv({ cls: 'repetito-round-folders' });
-    this.plugin.data.folders.forEach(f => { const label = folderOptions.createEl('label', { cls: 'repetito-check' }); const input = label.createEl('input', { attr: { type: 'checkbox' } }); label.createSpan({ text: f.name }); checks.push([f.id, input]); });
+    folderOptions.createEl('h3', { text: 'Stoff / Ordner auswählen' });
+    const folderTree = folderOptions.createDiv({ cls: 'repetito-round-folder-tree' });
+    const drawFolderChoice = (folder, host, depth = 0) => {
+      const children = this.plugin.data.folders.filter(x => x.parentId === folder.id);
+      const node = children.length ? host.createEl('details', { cls: 'repetito-folder-choice-group' }) : null;
+      const lineHost = node || host;
+      let input;
+      if (children.length) {
+        lineHost.createEl('summary', { text: folder.name });
+        input = lineHost.createEl('input', { attr: { type: 'checkbox', 'aria-label': `${folder.name} auswählen` } });
+      } else {
+        const label = lineHost.createEl('label', { cls: 'repetito-folder-choice' });
+        input = label.createEl('input', { attr: { type: 'checkbox' } });
+        label.createSpan({ text: folder.name });
+      }
+      checks.push([folder.id, input]);
+      if (children.length) {
+        const nested = lineHost.createDiv({ cls: 'repetito-round-folder-children' });
+        children.forEach(child => drawFolderChoice(child, nested, depth + 1));
+      }
+    };
+    this.plugin.data.folders.filter(f => !f.parentId || !this.plugin.data.folders.some(parent => parent.id === f.parentId)).forEach(f => drawFolderChoice(f, folderTree));
     const include = folderOptions.createEl('label', { cls: 'repetito-check' }); const includeInput = include.createEl('input', { attr: { type: 'checkbox' } }); includeInput.checked = true; include.createSpan({ text: 'Unterordner einbeziehen' });
 
     const limitRow = c.createDiv({ cls: 'repetito-round-limit' });
@@ -310,12 +331,12 @@ class RepetitoView extends ItemView {
     const limit = limitRow.createEl('input', { attr: { type: 'number', min: '1', placeholder: 'Alle Übungen', 'aria-label': 'Anzahl Übungen' } });
 
     const checkRow = c.createDiv({ cls: 'repetito-round-checks' });
-    const favorites = checkRow.createEl('label', { cls: 'repetito-check' }); const favOnly = favorites.createEl('input', { attr: { type: 'checkbox' } }); favorites.createSpan({ text: 'Nur Favoriten' });
     const unrated = checkRow.createEl('label', { cls: 'repetito-check' }); const un = unrated.createEl('input', { attr: { type: 'checkbox' } }); unrated.createSpan({ text: 'Nur noch nicht repetierte' });
+    const favorites = checkRow.createEl('label', { cls: 'repetito-check' }); const favOnly = favorites.createEl('input', { attr: { type: 'checkbox' } }); favorites.createSpan({ text: 'Nur Favoriten' });
 
     const filterRow = c.createDiv({ cls: 'repetito-round-filters' });
-    const byRating = filterRow.createEl('select', { attr: { 'aria-label': 'Schwierigkeit der Runde' } }); this.option(byRating, '', 'Alle Schwierigkeiten'); RATINGS.forEach(x => this.option(byRating, x, x));
     const byIndependence = filterRow.createEl('select', { attr: { 'aria-label': 'Selbstständigkeit der Runde' } }); this.option(byIndependence, '', 'Alle Selbstständigkeiten'); INDEPENDENCE.forEach(x => this.option(byIndependence, x, x));
+    const byRating = filterRow.createEl('select', { attr: { 'aria-label': 'Schwierigkeit der Runde' } }); this.option(byRating, '', 'Alle Schwierigkeiten'); RATINGS.forEach(x => this.option(byRating, x, x));
     const launchRow = c.createDiv({ cls: 'repetito-round-launch' });
     const launch = launchRow.createEl('button', { text: 'Runde starten' }); launch.addEventListener('click', async () => {
       const selected = new Set(checks.filter(x => x[1].checked).map(x => x[0]));
@@ -355,16 +376,17 @@ class RepetitoView extends ItemView {
     s.paused = true; s.startedAt = 0; await this.plugin.persist(); this.stopTicker();
     const modal = new Modal(this.app); modal.titleEl.setText('Repetition bewerten');
     const c = modal.contentEl; c.addClass('repetito-modal-content'); c.createEl('p', { text: `Bearbeitungszeit: ${formatTime(s.elapsed)}` });
-    c.createEl('label', { text: 'Schwierigkeit' }); const rating = c.createEl('select'); RATINGS.forEach(x => this.option(rating, x, x));
-    c.createEl('label', { text: 'Selbstständigkeit' }); const independence = c.createEl('select'); INDEPENDENCE.forEach(x => this.option(independence, x, x));
-    c.createEl('button', { text: 'Speichern' }).addEventListener('click', async () => {
+    const ratingField = c.createDiv({ cls: 'repetito-field' }); ratingField.createEl('label', { text: 'Schwierigkeit' }); const rating = ratingField.createEl('select'); RATINGS.forEach(x => this.option(rating, x, x));
+    const independenceField = c.createDiv({ cls: 'repetito-field' }); independenceField.createEl('label', { text: 'Selbstständigkeit' }); const independence = independenceField.createEl('select'); INDEPENDENCE.forEach(x => this.option(independence, x, x));
+    const actions = c.createDiv({ cls: 'repetito-modal-actions' });
+    actions.createEl('button', { text: 'Speichern' }).addEventListener('click', async () => {
       const ex = this.plugin.exercise(exerciseId); ex.attempts.push({ id: uid(), date: Date.now(), seconds: Math.max(0, Math.round(s.elapsed)), rating: rating.value, independence: independence.value });
       if (s.single) this.plugin.data.session = null;
       else s.completed.push({ exerciseName: ex.name, seconds: Math.max(0, Math.round(s.elapsed)), rating: rating.value, independence: independence.value });
       await this.plugin.persist(); modal.close();
       if (this.plugin.data.session && !s.single) await this.nextRoundExercise(); else await this.showExercise(exerciseId);
     });
-    c.createEl('button', { text: 'Abbrechen' }).addEventListener('click', () => { modal.close(); this.render(); }); modal.open();
+    actions.createEl('button', { text: 'Abbrechen' }).addEventListener('click', () => { modal.close(); this.render(); }); modal.open();
   }
 
   async nextRoundExercise() {
