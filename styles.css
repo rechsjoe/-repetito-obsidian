@@ -16,15 +16,20 @@
 .repetito-controls select { min-height: 40px; max-width: 100%; }
 .repetito-check { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 8px; }
 .repetito-check input { width: 18px; height: 18px; }
-.repetito-row { display: flex; align-items: center; gap: 6px; min-height: 44px; padding-inline-start: calc(var(--depth, 0) * 16px); border-bottom: 1px solid var(--background-modifier-border); }
+.repetito-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 8px; padding-inline-start: calc(8px + var(--depth, 0) * 16px); border-bottom: 1px solid var(--background-modifier-border); }
+.repetito-folder-row { min-height: 60px; gap: 10px; }
 .repetito-folder-progress { display: flex; flex: 0 1 92px; height: 9px; min-width: 45px; overflow: hidden; border-radius: 20px; background: var(--background-modifier-border); }
 .repetito-item-name, .repetito-link { flex: 1; min-width: 0; text-align: left; }
 .repetito-link { border: 0; color: var(--link-color); background: transparent; text-decoration: underline; cursor: pointer; min-height: 40px; overflow-wrap: anywhere; }
+.repetito-exercise-row { display: grid; grid-template-columns: 48px minmax(150px, 1fr) minmax(175px, 230px) repeat(3, 48px); gap: 10px; min-height: 64px; padding: 8px 10px; }
+.repetito-exercise-row > .repetito-icon-button { width: 48px; height: 48px; min-width: 48px; padding: 0; }
+.repetito-exercise-row > .repetito-link { width: 100%; min-width: 0; height: 48px; padding: 0 14px; border-radius: 24px; background: var(--background-secondary); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repetito-exercise-row > .repetito-meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .repetito-meta, .repetito-empty { color: var(--text-muted); font-size: var(--font-smaller); }
 .repetito-icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
 .repetito-disclosure.is-collapsed svg { transform: rotate(-90deg); }
 .repetito-folder-content.repetito-hidden, .repetito-hidden { display: none; }
-.repetito-folder-content { margin-left: 4px; }
+.repetito-folder-content { margin: 4px 0 10px 8px; padding-left: 6px; border-left: 1px solid var(--background-modifier-border); }
 .repetito-timer-card { text-align: center; }
 .repetito-clock { font-size: clamp(2.4rem, 10vw, 4rem); font-variant-numeric: tabular-nums; margin: 12px; }
 .repetito-actions { justify-content: center; }
@@ -35,4 +40,29 @@
 .repetito-pdf-row, .repetito-history-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--background-modifier-border); padding: 6px 0; }
 .repetito-history-row span { flex: 1 1 240px; }
 .repetito-root input, .repetito-root select, .repetito-root textarea { font-size: 16px; }
-@media (max-width: 600px) { .repetito-root { padding: 8px; } .repetito-meta { flex-basis: 100%; } .repetito-row { flex-wrap: wrap; padding-block: 4px; } }
+.repetito-modal-content { display: flex; flex-direction: column; gap: 16px; padding-block: 8px 12px; }
+.repetito-modal-content > * { margin: 0; min-width: 0; }
+.repetito-modal-content p { line-height: 1.5; }
+.repetito-modal-content input:not([type="checkbox"]), .repetito-modal-content select { width: 100%; min-height: 48px; padding: 10px 14px; }
+.repetito-modal-content button { min-height: 48px; padding: 10px 18px; }
+.repetito-modal-content input[type="file"] { display: block; height: auto; padding: 12px; }
+.repetito-modal-content input[type="file"]::file-selector-button { min-height: 42px; margin-inline-end: 12px; padding: 8px 14px; }
+.repetito-round-folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 6px 14px; }
+.repetito-round-limit { display: grid; grid-template-columns: minmax(130px, 0.35fr) minmax(180px, 1fr); align-items: center; gap: 12px; }
+.repetito-round-checks, .repetito-round-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: center; }
+.repetito-round-checks .repetito-check { justify-content: flex-start; }
+.repetito-round-launch { display: flex; justify-content: flex-end; }
+@media (max-width: 700px) {
+  .repetito-root { padding: 8px; }
+  .repetito-meta { flex-basis: 100%; }
+  .repetito-row { flex-wrap: wrap; padding-block: 6px; }
+  .repetito-exercise-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; padding: 8px 4px; }
+  .repetito-exercise-row > .repetito-icon-button { width: 44px; height: 44px; min-width: 44px; }
+  .repetito-exercise-row > .repetito-link { grid-column: 2 / 3; grid-row: 1; text-align: left; }
+  .repetito-exercise-row > .repetito-meta { grid-column: 2 / -1; grid-row: 2; }
+  .repetito-exercise-row > .repetito-icon-button:nth-last-child(3) { grid-column: 1; grid-row: 2; }
+  .repetito-exercise-row > .repetito-icon-button:nth-last-child(2) { grid-column: 2; grid-row: 3; }
+  .repetito-exercise-row > .repetito-icon-button:last-child { grid-column: 3; grid-row: 3; }
+  .repetito-round-limit { grid-template-columns: 1fr; gap: 6px; }
+  .repetito-round-checks, .repetito-round-filters { grid-template-columns: 1fr 1fr; gap: 8px; }
+}

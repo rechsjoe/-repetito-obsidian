@@ -216,6 +216,7 @@ class RepetitoView extends ItemView {
 
   addPdf(exercise, type) {
     const modal = new Modal(this.app); modal.titleEl.setText(type === 'task' ? 'Aufgaben-PDF hinzufügen' : 'Lösungs-PDF hinzufügen');
+    modal.contentEl.addClass('repetito-modal-content');
     const choices = modal.contentEl; choices.createEl('p', { text: 'Vorhandene PDF aus dem Vault wählen oder eine neue Datei hinzufügen.' });
     const select = choices.createEl('select'); select.createEl('option', { text: 'PDF im Vault auswählen…', attr: { value: '' } });
     this.app.vault.getFiles().filter(f => f.extension.toLowerCase() === 'pdf').forEach(f => select.createEl('option', { text: f.path, attr: { value: f.path } }));
@@ -260,6 +261,7 @@ class RepetitoView extends ItemView {
   }
   moveModal(title, folders, selectedId, callback) {
     const modal = new Modal(this.app); modal.titleEl.setText(title); const c = modal.contentEl;
+    c.addClass('repetito-modal-content');
     const select = c.createEl('select', { attr: { 'aria-label': 'Zielordner' } });
     this.option(select, '', 'Hauptverzeichnis');
     folders.forEach(f => this.option(select, f.id, `${f.name}${f.parentId ? ` (${this.folderPath(f.id)})` : ''}`));
@@ -297,16 +299,25 @@ class RepetitoView extends ItemView {
   startRound() {
     if (this.plugin.data.session) { new Notice('Es läuft bereits eine Runde.'); return; }
     const modal = new Modal(this.app); modal.titleEl.setText('Repetitionsrunde zusammenstellen');
-    const c = modal.contentEl; c.createEl('p', { text: 'Wähle Ordner aus. Unterordner werden einbezogen. Ohne Auswahl werden alle Übungen verwendet.' });
+    const c = modal.contentEl; c.addClass('repetito-modal-content'); c.addClass('repetito-round-modal'); c.createEl('p', { text: 'Wähle Ordner aus. Unterordner werden einbezogen. Ohne Auswahl werden alle Übungen verwendet.' });
     const checks = [];
-    this.plugin.data.folders.forEach(f => { const label = c.createEl('label', { cls: 'repetito-check' }); const input = label.createEl('input', { attr: { type: 'checkbox' } }); label.createSpan({ text: f.name }); checks.push([f.id, input]); });
-    const include = c.createEl('label', { cls: 'repetito-check' }); const includeInput = include.createEl('input', { attr: { type: 'checkbox' } }); includeInput.checked = true; include.createSpan({ text: 'Unterordner einbeziehen' });
-    const limit = c.createEl('input', { attr: { type: 'number', min: '1', placeholder: 'Alle Übungen', 'aria-label': 'Maximale Anzahl' } });
-    const favorites = c.createEl('label', { cls: 'repetito-check' }); const favOnly = favorites.createEl('input', { attr: { type: 'checkbox' } }); favorites.createSpan({ text: 'Nur Favoriten' });
-    const unrated = c.createEl('label', { cls: 'repetito-check' }); const un = unrated.createEl('input', { attr: { type: 'checkbox' } }); unrated.createSpan({ text: 'Nur noch nicht repetierte' });
-    const byRating = c.createEl('select', { attr: { 'aria-label': 'Schwierigkeit der Runde' } }); this.option(byRating, '', 'Alle Schwierigkeiten'); RATINGS.forEach(x => this.option(byRating, x, x));
-    const byIndependence = c.createEl('select', { attr: { 'aria-label': 'Selbstständigkeit der Runde' } }); this.option(byIndependence, '', 'Alle Selbstständigkeiten'); INDEPENDENCE.forEach(x => this.option(byIndependence, x, x));
-    const launch = c.createEl('button', { text: 'Runde starten' }); launch.addEventListener('click', async () => {
+    const folderOptions = c.createDiv({ cls: 'repetito-round-folders' });
+    this.plugin.data.folders.forEach(f => { const label = folderOptions.createEl('label', { cls: 'repetito-check' }); const input = label.createEl('input', { attr: { type: 'checkbox' } }); label.createSpan({ text: f.name }); checks.push([f.id, input]); });
+    const include = folderOptions.createEl('label', { cls: 'repetito-check' }); const includeInput = include.createEl('input', { attr: { type: 'checkbox' } }); includeInput.checked = true; include.createSpan({ text: 'Unterordner einbeziehen' });
+
+    const limitRow = c.createDiv({ cls: 'repetito-round-limit' });
+    limitRow.createEl('label', { text: 'Anzahl Übungen' });
+    const limit = limitRow.createEl('input', { attr: { type: 'number', min: '1', placeholder: 'Alle Übungen', 'aria-label': 'Anzahl Übungen' } });
+
+    const checkRow = c.createDiv({ cls: 'repetito-round-checks' });
+    const favorites = checkRow.createEl('label', { cls: 'repetito-check' }); const favOnly = favorites.createEl('input', { attr: { type: 'checkbox' } }); favorites.createSpan({ text: 'Nur Favoriten' });
+    const unrated = checkRow.createEl('label', { cls: 'repetito-check' }); const un = unrated.createEl('input', { attr: { type: 'checkbox' } }); unrated.createSpan({ text: 'Nur noch nicht repetierte' });
+
+    const filterRow = c.createDiv({ cls: 'repetito-round-filters' });
+    const byRating = filterRow.createEl('select', { attr: { 'aria-label': 'Schwierigkeit der Runde' } }); this.option(byRating, '', 'Alle Schwierigkeiten'); RATINGS.forEach(x => this.option(byRating, x, x));
+    const byIndependence = filterRow.createEl('select', { attr: { 'aria-label': 'Selbstständigkeit der Runde' } }); this.option(byIndependence, '', 'Alle Selbstständigkeiten'); INDEPENDENCE.forEach(x => this.option(byIndependence, x, x));
+    const launchRow = c.createDiv({ cls: 'repetito-round-launch' });
+    const launch = launchRow.createEl('button', { text: 'Runde starten' }); launch.addEventListener('click', async () => {
       const selected = new Set(checks.filter(x => x[1].checked).map(x => x[0]));
       if (selected.size && includeInput.checked) { let change = true; while (change) { change = false; this.plugin.data.folders.forEach(f => { if (selected.has(f.parentId) && !selected.has(f.id)) { selected.add(f.id); change = true; } }); } }
       let items = this.plugin.data.exercises.filter(x => !selected.size || selected.has(x.folderId));
@@ -343,7 +354,7 @@ class RepetitoView extends ItemView {
     if (!s.paused) s.elapsed += (Date.now() - s.startedAt) / 1000;
     s.paused = true; s.startedAt = 0; await this.plugin.persist(); this.stopTicker();
     const modal = new Modal(this.app); modal.titleEl.setText('Repetition bewerten');
-    const c = modal.contentEl; c.createEl('p', { text: `Bearbeitungszeit: ${formatTime(s.elapsed)}` });
+    const c = modal.contentEl; c.addClass('repetito-modal-content'); c.createEl('p', { text: `Bearbeitungszeit: ${formatTime(s.elapsed)}` });
     c.createEl('label', { text: 'Schwierigkeit' }); const rating = c.createEl('select'); RATINGS.forEach(x => this.option(rating, x, x));
     c.createEl('label', { text: 'Selbstständigkeit' }); const independence = c.createEl('select'); INDEPENDENCE.forEach(x => this.option(independence, x, x));
     c.createEl('button', { text: 'Speichern' }).addEventListener('click', async () => {
@@ -369,7 +380,7 @@ class RepetitoView extends ItemView {
 
   showRoundSummary(session) {
     const modal = new Modal(this.app); modal.titleEl.setText('Repetitionsrunde abgeschlossen');
-    const c = modal.contentEl; const completed = session.completed || [];
+    const c = modal.contentEl; c.addClass('repetito-modal-content'); const completed = session.completed || [];
     const total = completed.reduce((sum, x) => sum + x.seconds, 0);
     c.createEl('p', { text: `${completed.length} Übung(en) abgeschlossen · Gesamtzeit ${formatTime(total)}` });
     const list = c.createEl('ul'); completed.forEach(x => list.createEl('li', { text: `${x.exerciseName}: ${formatTime(x.seconds)} · ${x.rating} · ${x.independence}` }));
@@ -386,14 +397,14 @@ class RepetitoView extends ItemView {
     this.confirm('Laufenden Versuch und die Runde abbrechen? Es wird kein Versuch gespeichert.', async () => { this.stopTicker(); this.plugin.data.session = null; await this.plugin.persist(); await this.render(); });
   }
   editAttempt(ex, item) {
-    const modal = new Modal(this.app); modal.titleEl.setText('Repetition korrigieren'); const c = modal.contentEl;
+    const modal = new Modal(this.app); modal.titleEl.setText('Repetition korrigieren'); const c = modal.contentEl; c.addClass('repetito-modal-content');
     const secs = c.createEl('input', { attr: { type: 'number', min: '0', value: String(item.seconds), 'aria-label': 'Sekunden' } });
     const rating = c.createEl('select'); RATINGS.forEach(x => this.option(rating, x, x)); rating.value = item.rating;
     const independence = c.createEl('select'); INDEPENDENCE.forEach(x => this.option(independence, x, x)); independence.value = item.independence;
     c.createEl('button', { text: 'Änderungen speichern' }).addEventListener('click', async () => { item.seconds = Math.max(0, Number(secs.value)); item.rating = rating.value; item.independence = independence.value; await this.plugin.persist(); modal.close(); await this.showExercise(ex.id); }); modal.open();
   }
   async confirm(message, action) {
-    const modal = new Modal(this.app); modal.titleEl.setText('Bitte bestätigen'); modal.contentEl.createEl('p', { text: message });
+    const modal = new Modal(this.app); modal.titleEl.setText('Bitte bestätigen'); modal.contentEl.addClass('repetito-modal-content'); modal.contentEl.createEl('p', { text: message });
     modal.contentEl.createEl('button', { text: 'Abbrechen' }).addEventListener('click', () => modal.close());
     modal.contentEl.createEl('button', { text: 'Bestätigen', cls: 'mod-warning' }).addEventListener('click', async () => { modal.close(); await action(); }); modal.open();
   }
@@ -407,7 +418,7 @@ class RepetitoView extends ItemView {
 class TextModal extends Modal {
   constructor(app, title, placeholder, onSubmit, initial = '', type = 'text') { super(app); Object.assign(this, { title, placeholder, onSubmit, initial, type }); }
   onOpen() {
-    this.titleEl.setText(this.title); const input = this.contentEl.createEl('input', { attr: { type: this.type, placeholder: this.placeholder, value: this.initial, 'aria-label': this.placeholder } });
+    this.titleEl.setText(this.title); this.contentEl.addClass('repetito-modal-content'); const input = this.contentEl.createEl('input', { attr: { type: this.type, placeholder: this.placeholder, value: this.initial, 'aria-label': this.placeholder } });
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submit.click(); });
     const submit = this.contentEl.createEl('button', { text: 'Speichern' }); submit.addEventListener('click', async () => { const value = input.value.trim(); if (!value) return new Notice('Bitte einen Wert eingeben.'); await this.onSubmit(value); this.close(); }); input.focus();
   }
